@@ -40,12 +40,19 @@ def read_file():
     df = pd.concat([df1, df2], ignore_index=True)
     df.set_index('Date_start', inplace = True)
     df3.set_index('Date', inplace = True)
+    df4.set_index('yyyy-mm-dd hh:mm:ss', inplace=True)
+    df4.index = pd.DatetimeIndex(df4.index)
+
+
 
     #add holidays to df
     df['holiday'] = np.where(df.index.to_period('D').astype('datetime64[ns]').isin(df3), True, False)
 
-    #start with df4
-    df4
+    #Work with df4
+    df4 = df4.resample('H').mean()
+    df.index = pd.DatetimeIndex(df.index)
+    df = pd.concat([df,df4])
+    df4.sort_index(ascending=True)
 
 
     print("nice")
@@ -66,7 +73,6 @@ def main():
         myFunctions.plot2(file[1])
     elif var == 3:
         myFunctions.plot3(file[2])
-
     elif var == 4:
         myFunctions.test_pandas(file)
 
