@@ -51,7 +51,9 @@ def read_file():
     #add holidays to df
     df['holiday'] = np.where(df.index.to_period('D').astype('datetime64[ns]').isin(df3), True, False)
 
-    #Work with df4
+    #Resample weather data (df4) to have h-frequency. average is taken for everything except the rain:day, which is as maximum
+    #Not sure if this is correct
+
     df4_resample = df4.resample('H',closed='left', label= 'right')['temp_C', 'HR', 'windSpeed_m/s', 'windGust_m/s', 'pres_mbar',
        'solarRad_W/m2', 'rain_mm/h'].mean()
     df4_resample2 = df4.resample('H',closed='left', label='right')['rain_day'].max()
@@ -59,10 +61,14 @@ def read_file():
     df4_resample.sort_index(ascending=True)
     df = df.join(df4_resample, how= 'left')
 
+    #Replace nan values with 0 (about 2200)
+    df = df.fillna(0)
+
     print("nice")
 
-    return
 
+
+    return
 
 def main():
     file = read_file()
