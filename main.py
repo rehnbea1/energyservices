@@ -11,6 +11,8 @@
 
 import numpy as np
 import pandas as pd
+import datetime as dt
+
 import matplotlib.pyplot as plt
 
 import myFunctions
@@ -27,21 +29,22 @@ def read_file():
     #file3 = Holidays 2017,18,19
     #file4 weather data
 
-    d_parser = lambda x: pd.datetime.strptime(x, '%d-%m-%Y %H:%M')
-    e_parser = lambda x: pd.datetime.strptime(x, '%d.%m.%Y')
+    d_parser = lambda x: dt.datetime.strptime(x, '%d-%m-%Y %H:%M')
+    e_parser = lambda x: dt.datetime.strptime(x, '%d.%m.%Y')
+    f_parser = lambda x: dt.datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
+
 
     #Read files and set correct date format
-    df1 = pd.read_csv(file1, parse_dates=["Date_start"], date_parser= d_parser)
+    df = pd.read_csv(file1, parse_dates=["Date_start"], date_parser= d_parser)
     df2 = pd.read_csv(file2, parse_dates=["Date_start"], date_parser=d_parser)
     df3 = pd.read_csv(file3, parse_dates=['Date'], date_parser = e_parser)
-    df4 = pd.read_csv(file4)
+    df4 = pd.read_csv(file4, parse_dates=['yyyy-mm-dd hh:mm:ss'], date_parser = f_parser)
 
     #merge df1&2 to one file - df
-    df = pd.concat([df1, df2], ignore_index=True)
+    df = pd.concat([df, df2], ignore_index=True)
     df.set_index('Date_start', inplace = True)
     df3.set_index('Date', inplace = True)
     df4.set_index('yyyy-mm-dd hh:mm:ss', inplace=True)
-    df4.index = pd.DatetimeIndex(df4.index)
 
 
 
@@ -49,11 +52,12 @@ def read_file():
     df['holiday'] = np.where(df.index.to_period('D').astype('datetime64[ns]').isin(df3), True, False)
 
     #Work with df4
-    df4 = df4.resample('H').mean()
-    df.index = pd.DatetimeIndex(df.index)
-    df = pd.concat([df,df4])
-    df4.sort_index(ascending=True)
-
+    df4_resample = df4.resample('H',closed='left', label= 'right')['temp_C', 'HR', 'windSpeed_m/s', 'windGust_m/s', 'pres_mbar',
+       'solarRad_W/m2', 'rain_mm/h'].mean()
+    df4_resample2 = df4.resample('H',closed='left', label='right')['rain_day'].max()
+    df4_resample = df4_resample.join(df4_resample2)
+    df4_resample.sort_index(ascending=True)
+    df = df.join(df4_resample, how= 'left')
 
     print("nice")
 
