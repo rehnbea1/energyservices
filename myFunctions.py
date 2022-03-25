@@ -7,40 +7,12 @@ def plot1(df):
     plt.rcParams["figure.figsize"] = [15, 3.5]
     plt.rcParams["figure.autolayout"] = True
 
-    headers = ["Date_start", "Power_kW"]
+    headers = [index, "Power_kW"]
 
     x_axis = df.index
     y_axis = df["Power_kW"]
     plt.plot(x_axis,y_axis)
     plt.show()
-
-def plot2(df):
-    print("DF2")
-    print(df)
-    plt.rcParams["figure.figsize"] = [7.5, 3.5]
-    plt.rcParams["figure.autolayout"] = True
-
-   # headers = ["Date_start", "Power_kW"]
-
-    x_axis = df.index
-    y_axis = df["Power_kW"]
-    plt.plot(x_axis,y_axis)
-    plt.show()
-
-def plot3(df):
-    print("DF3")
-    print(df)
-    plt.rcParams["figure.figsize"] = [7.5, 3.5]
-    plt.rcParams["figure.autolayout"] = True
-
-   # headers = ["Date_start", "Power_kW"]
-
-    x_axis = df.index
-    y_axis = df['Date']
-    plt.plot(x_axis,y_axis)
-    plt.show()
-
-
 
 
 def test_pandas(df1):
@@ -66,13 +38,4 @@ def test_pandas(df1):
     delta = dfc["Date_start"].max() - dfc["Date_start"].min()
     print(delta)
     print("DONE2")
-class Data:
-    def __init__(self, file):
-        self.keys = file.keys()
-        self.values = file.values()
-
-    def afunction(self,file):
-        self.keys= file.keys()
-        self.values = file.values()
-        return
 

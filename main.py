@@ -56,33 +56,46 @@ def read_file():
 
     df4_resample = df4.resample('H',closed='left', label= 'right')['temp_C', 'HR', 'windSpeed_m/s', 'windGust_m/s', 'pres_mbar',
        'solarRad_W/m2', 'rain_mm/h'].mean()
-    df4_resample2 = df4.resample('H',closed='left', label='right')['rain_day'].max()
+    df4_resample2 = df4.resample('H',closed='left', label='right')['rain_day'].mean()
     df4_resample = df4_resample.join(df4_resample2)
     df4_resample.sort_index(ascending=True)
     df = df.join(df4_resample, how= 'left')
 
-    #Replace nan values with 0 (about 2200)
+    #Replace nan values with 0 (about 2200 rows)
     df = df.fillna(0)
+    df['Day_nr'] = df.index.dayofweek
+
+    #Plot window setup
+    plt.rcParams["figure.figsize"] = [15, 3.5]
+    plt.rcParams["figure.autolayout"] = True
+
+    #Plot figure 1
+    plt.xlabel('Date')
+    plt.ylabel('Power in kW')
+    x_axis = df.index
+    y_axis = df["Power_kW"]
+    plt.plot(x_axis,y_axis)
+
+    #Print figure 2
+    plt.figure()
+    x2 = df.index
+    y2 = df['rain_day']
+    plt.plot(x2,y2)
+    plt.show()
+
+
 
     print("nice")
-
-
-
     return
 
 def main():
     file = read_file()
-
 
     print("Selections: 1,2,3 ")
 
     var = int(input("select function:"))
     if var==1:
         myFunctions.plot1(file[0])
-    elif var==2:
-        myFunctions.plot2(file[1])
-    elif var == 3:
-        myFunctions.plot3(file[2])
     elif var == 4:
         myFunctions.test_pandas(file)
 
