@@ -8,14 +8,15 @@
 #- weather data for the weather station in South tower for 2017 and 2018
 #The deliverable of this project are:
 #- a python file (py) or a python notebook (ipynb) that uses the raw data files  only.
-
+import missingno as msno
+from seaborn import heatmap
 import numpy as np
 import pandas as pd
-
 from datetime import datetime
 
-import matplotlib.pyplot as plt
 
+
+import matplotlib.pyplot as plt
 import myFunctions
 
 def read_file():
@@ -52,11 +53,6 @@ def read_file():
     df3.set_index('Date', inplace = True)
     df4.set_index('yyyy-mm-dd hh:mm:ss', inplace=True)
 
-
-
-
-
-
     #Resample weather data (df4) to have h-frequency. average is taken for everything except the rain:day, which is as maximum
     #Not sure if this is correct
 
@@ -67,15 +63,14 @@ def read_file():
     df4_resample.sort_index(ascending=True)
     df_all = df_all.join(df4_resample, how= 'left')
 
-    #Replace nan values with 0 (about 2200 rows)
-    df_all = df_all.fillna(0)
+
+
     df_all['Day_nr'] = df_all.index.dayofweek
 
     # add holidays to df_all
-    print(df_all)
     df_all["holiday"] = np.isin(df_all.index.date, df3.index.date)
 
-
+    missing = msno.bar(df_all)
 
 
 
@@ -98,7 +93,6 @@ def read_file():
     #plt.show()
 
 
-
     print("nice")
     return (df_all)
 
@@ -107,40 +101,122 @@ def read_file():
 def analysis(df_all):
 
     #Create table with only weekends
-    df_all['wknd_pwr'] = np.where(df_all['Day_nr'] >= 5, df_all['Power_kW'],None )
+    df_all['wknd_pwr'] = np.where(df_all['Day_nr'] >= 5, df_all['Power_kW'],None)
     #df_new.index = df_all.index
-    df_new = pd.DataFrame(data = df_all['wknd_pwr'])
-    df_new['Day_nr'] = df_all.index.dayofweek
-    df_new['holiday'] = df_all['holiday']
-    df_new['saturday'] = np.where(df_new['Day_nr'] == 5, df_new['wknd_pwr'], None)
-    df_new['sunday'] = np.where(df_new['Day_nr'] == 6, df_new['wknd_pwr'], None)
+    df_weekend = pd.DataFrame(data = df_all['wknd_pwr'])
+    df_weekend['Day_nr'] = df_all.index.dayofweek
+    df_weekend['holiday'] = df_all['holiday']
+    df_weekend['saturday'] = np.where(df_weekend['Day_nr'] == 5, df_weekend['wknd_pwr'], None)
+    df_weekend['sunday'] = np.where(df_weekend['Day_nr'] == 6, df_weekend['wknd_pwr'], None)
 
     #create another year 2019
     datelist = pd.date_range('2019-01-01 00:00:00', periods=8760, freq='H', ).tolist()
 
-    dates  ={'Y2019':datelist}
+    dates = {'Y2019':datelist}
     Datelist = pd.DataFrame(data=dates)
     Datelist.set_index('Y2019', inplace=True)
-    Datelist['nr'] = 1
-    df_new = pd.concat([df_new,Datelist])
+    df_weekend = pd.concat([df_weekend,Datelist])
 
-    df_all = df_all.shift(periods = 200)
+    #Print figure 2
+    plt.figure()
+    x2 = df_weekend.index
+    y2 = df_weekend['wknd_pwr']
+    plt.plot(x2,y2)
+    plt.show()
 
-    return df_all, df_new
+    # Print figure 2
+    plt.figure()
+    x2 = df_weekend.index
+    y2 = df_weekend['wknd_pwr']
+    plt.plot(x2, y2)
+    plt.show()
+
+
+
+
+
+
+    return df_all, df_weekend
 
 
 def analyse_data_all(df_all):
+    # simple offset forcasting
+    forcast_offset = df_all.shift(periods=1)
 
-    pass
+
+    #data_corr = abs(df_all.corr(method='pearson', min_periods=1))
+
+    corr_mtx = df_all.corr()
+    heatmap(corr_mtx, xticklabels=corr_mtx.columns, yticklabels=corr_mtx.columns, annot=True, fmt='.2f', cmap='Blues', )
+
+
+    print('NIICE')
+    return
 
 def main():
+
+
     df_all = read_file()
     # Plot figure 1
-    plt.xlabel('Date')
-    plt.ylabel('Power in kW')
+
+    #Plot window setup
     x_axis = df_all.index
     y_axis = df_all["Power_kW"]
-    plt.plot(x_axis, y_axis)
+    y2_axis = df_all['temp_C']
+
+    fig, ax1 = plt.subplots(figsize=[60, 10])
+
+    color = 'y'
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Power_kW', color=color)
+    ax1.plot(x_axis, y_axis, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'g'
+    ax2.set_ylabel('Temp_C', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x_axis,y2_axis, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+
+    #power to temperature relationship
+    plt.figure(figsize=[20, 10])
+    plt.scatter(df_all['Power_kW'],df_all['temp_C'])
+    plt.show()
+
+    plt.figure(figsize=[20, 10])
+    plt.scatter(df_all.index,df_all['temp_C'], color = 'purple')
+    plt.scatter(df_all.index,df_all['Power_kW'], color = 'r')
+    plt.show()
+
+    #Chart to show correlation of Power and weather
+    fig, ax1 = plt.subplots(figsize=[20, 10])
+
+    color = 'pink'
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Power_kW', color=color)
+    ax1.plot(x_axis, y_axis, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'grey'
+    ax2.set_ylabel('Temp_C', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x_axis, df_all['temp_C'].rolling(90).sum(), color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    color = 'purple'
+    ax2.set_ylabel('Temp_C', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x_axis, df_all['temp_C'].rolling(90).sum(), color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+
+
 
     df2 = analyse_data_all(df_all)
 
@@ -151,12 +227,15 @@ def main():
     # Initiating the class
 
     #Plot figure 1
-    plt.xlabel('Date')
-    plt.ylabel('Power in kW')
-    x_axis = df_all.index
-    y_axis = df_all["Power_kW"]
-    plt.plot(x_axis,y_axis, color = 'r')
-    plt.show()
+    #plt.xlabel('Date')
+    #plt.ylabel('Power in kW')
+   # x_axis = df_all.index
+  #  y_axis = df_all["Power_kW"]
+ #   plt.plot(x_axis,y_axis, color = 'r')
+#    plt.show()
+
+
+
     var = int(input("select function:"))
     if var==1:
         myFunctions.plot1(file[0])
