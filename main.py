@@ -11,7 +11,8 @@
 
 import numpy as np
 import pandas as pd
-import datetime as dt
+
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 
@@ -29,27 +30,32 @@ def read_file():
     #file3 = Holidays 2017,18,19
     #file4 weather data
 
-    d_parser = lambda x: dt.datetime.strptime(x, '%d-%m-%Y %H:%M')
-    e_parser = lambda x: dt.datetime.strptime(x, '%d.%m.%Y')
-    f_parser = lambda x: dt.datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
+    d_parser = lambda x: datetime.strptime(x, '%d-%m-%Y %H:%M')
+    e_parser = lambda x: datetime.strptime(x, '%d.%m.%Y')
+    f_parser = lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
 
 
     #Read files and set correct date format
-    df = pd.read_csv(file1, parse_dates=["Date_start"], date_parser= d_parser)
-    df2 = pd.read_csv(file2, parse_dates=["Date_start"], date_parser=d_parser)
+    #'Everything
+    df_all = pd.read_csv(file1, parse_dates=["Date_start"], date_parser= d_parser)
+    #2017
+    power_data_2018 = pd.read_csv(file2, parse_dates=["Date_start"], date_parser=d_parser)
+
+    #Holiday
     df3 = pd.read_csv(file3, parse_dates=['Date'], date_parser = e_parser)
     df4 = pd.read_csv(file4, parse_dates=['yyyy-mm-dd hh:mm:ss'], date_parser = f_parser)
 
+
     #merge df1&2 to one file - df
-    df = pd.concat([df, df2], ignore_index=True)
-    df.set_index('Date_start', inplace = True)
+    df_all = pd.concat([df_all, power_data_2018], ignore_index=True)
+    df_all.set_index('Date_start', inplace = True)
     df3.set_index('Date', inplace = True)
     df4.set_index('yyyy-mm-dd hh:mm:ss', inplace=True)
 
 
 
-    #add holidays to df
-    df['holiday'] = np.where(df.index.to_period('D').astype('datetime64[ns]').isin(df3), True, False)
+
+
 
     #Resample weather data (df4) to have h-frequency. average is taken for everything except the rain:day, which is as maximum
     #Not sure if this is correct
@@ -59,40 +65,98 @@ def read_file():
     df4_resample2 = df4.resample('H',closed='left', label='right')['rain_day'].mean()
     df4_resample = df4_resample.join(df4_resample2)
     df4_resample.sort_index(ascending=True)
-    df = df.join(df4_resample, how= 'left')
+    df_all = df_all.join(df4_resample, how= 'left')
 
     #Replace nan values with 0 (about 2200 rows)
-    df = df.fillna(0)
-    df['Day_nr'] = df.index.dayofweek
+    df_all = df_all.fillna(0)
+    df_all['Day_nr'] = df_all.index.dayofweek
+
+    # add holidays to df_all
+    print(df_all)
+    df_all["holiday"] = np.isin(df_all.index.date, df3.index.date)
+
+
+
+
 
     #Plot window setup
-    plt.rcParams["figure.figsize"] = [15, 3.5]
-    plt.rcParams["figure.autolayout"] = True
+   # plt.rcParams["figure.figsize"] = [15, 3.5]
+   # plt.rcParams["figure.autolayout"] = True
 
     #Plot figure 1
-    plt.xlabel('Date')
-    plt.ylabel('Power in kW')
-    x_axis = df.index
-    y_axis = df["Power_kW"]
-    plt.plot(x_axis,y_axis)
+    #plt.xlabel('Date')
+    #plt.ylabel('Power in kW')
+    #x_axis = df_all.index
+    #y_axis = df_all["Power_kW"]
+    #plt.plot(x_axis,y_axis)
 
     #Print figure 2
-    plt.figure()
-    x2 = df.index
-    y2 = df['rain_day']
-    plt.plot(x2,y2)
-    plt.show()
+    #plt.figure()
+    #x2 = df_all.index
+    #y2 = df_all['rain_day']
+    #plt.plot(x2,y2)
+    #plt.show()
 
 
 
     print("nice")
-    return
+    return (df_all)
+
+
+
+def analysis(df_all):
+
+    #Create table with only weekends
+    df_all['wknd_pwr'] = np.where(df_all['Day_nr'] >= 5, df_all['Power_kW'],None )
+    #df_new.index = df_all.index
+    df_new = pd.DataFrame(data = df_all['wknd_pwr'])
+    df_new['Day_nr'] = df_all.index.dayofweek
+    df_new['holiday'] = df_all['holiday']
+    df_new['saturday'] = np.where(df_new['Day_nr'] == 5, df_new['wknd_pwr'], None)
+    df_new['sunday'] = np.where(df_new['Day_nr'] == 6, df_new['wknd_pwr'], None)
+
+    #create another year 2019
+    datelist = pd.date_range('2019-01-01 00:00:00', periods=8760, freq='H', ).tolist()
+
+    dates  ={'Y2019':datelist}
+    Datelist = pd.DataFrame(data=dates)
+    Datelist.set_index('Y2019', inplace=True)
+    Datelist['nr'] = 1
+    df_new = pd.concat([df_new,Datelist])
+
+    df_all = df_all.shift(periods = 200)
+
+    return df_all, df_new
+
+
+def analyse_data_all(df_all):
+
+    pass
 
 def main():
-    file = read_file()
+    df_all = read_file()
+    # Plot figure 1
+    plt.xlabel('Date')
+    plt.ylabel('Power in kW')
+    x_axis = df_all.index
+    y_axis = df_all["Power_kW"]
+    plt.plot(x_axis, y_axis)
 
-    print("Selections: 1,2,3 ")
+    df2 = analyse_data_all(df_all)
 
+    df_list = analysis(df_all)
+    df_all = df_list[0]
+    df_new = df_list[1]
+
+    # Initiating the class
+
+    #Plot figure 1
+    plt.xlabel('Date')
+    plt.ylabel('Power in kW')
+    x_axis = df_all.index
+    y_axis = df_all["Power_kW"]
+    plt.plot(x_axis,y_axis, color = 'r')
+    plt.show()
     var = int(input("select function:"))
     if var==1:
         myFunctions.plot1(file[0])
@@ -100,6 +164,7 @@ def main():
         myFunctions.test_pandas(file)
 
     print("ok")
+
 
 
 if __name__ == '__main__':
