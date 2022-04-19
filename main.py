@@ -27,6 +27,21 @@ from sklearn.tree import export_graphviz
 import pydot
 
 
+def plot_it(x, y, color)
+    x_axis = x
+    y_axis = y
+    color = color
+
+    fig, ax1 = plt.subplots(figsize=[60, 10])
+    color = 'blue'
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Power_kW', color=color)
+    ax1.plot(x_axis, y_axis, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    plt.show()
+    return
+
+
 def read_file():
     file1 = '/Users/albertrehnberg/Downloads/IST_Central_Pav_2018_Ene_Cons.csv - IST_Central_Pav_2018_Ene_Cons.csv.csv'
     file2 = '/Users/albertrehnberg/Downloads/IST_Central_Pav_2017_Ene_Cons.csv - IST_Central_Pav_2017_Ene_Cons.csv.csv'
@@ -140,19 +155,33 @@ def analyse_data_all(df_all):
     forcast_offset = df_all.shift(periods=1)
 
     # Correlation matrix
-    corr_mtx = df_all.corr()
-    heatmap(corr_mtx,
-            xticklabels=corr_mtx.columns,
-            yticklabels=corr_mtx.columns,
-            annot=True, fmt='.2f',
-            cmap='Blues', )
 
-    random_F_generator(df_all)
+    #corr_mtx = df_all.corr()
+    #heatmap(corr_mtx,
+    #        xticklabels=corr_mtx.columns,
+    #        yticklabels=corr_mtx.columns,
+    #        annot=True, fmt='.2f',
+    #        cmap='Blues')
+
+    #UNCOMMENT LATER!!!! _________
+    #random_F_generator(df_all)
     data_regression(df_all)
 
 
 def data_regression(df_all):
-    pass
+    #This function is for making a linear regression analysis on the power consumption
+    #At Alameda campus over 2 years
+
+
+    #Define plot params
+    x_axis = df_all.index
+    y_axis = df_all["Power_kW"]
+    color = 'blue'
+    #Send params to plot function
+    plot_it(x_axis, y_axis, color)
+
+
+    return
 
 def random_F_generator(df_all):
     # Randomforrestestimate for the next day
