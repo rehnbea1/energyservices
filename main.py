@@ -24,19 +24,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from pandas import DataFrame
 from sklearn.tree import export_graphviz
+from sklearn.linear_model import LinearRegression
 import pydot
 
 
-def plot_it(x, y, color)
-    x_axis = x
-    y_axis = y
-    color = color
+def plot_it(x, y, color, labelx, labely):
 
     fig, ax1 = plt.subplots(figsize=[60, 10])
-    color = 'blue'
-    ax1.set_xlabel('Date')
-    ax1.set_ylabel('Power_kW', color=color)
-    ax1.plot(x_axis, y_axis, color=color)
+    ax1.set_xlabel(labelx)
+    ax1.set_ylabel(labely, color=color)
+    ax1.plot(x, y, color=color)
     ax1.tick_params(axis='y', labelcolor=color)
     plt.show()
     return
@@ -87,7 +84,7 @@ def read_file():
 
     df_all['Day_nr'] = df_all.index.dayofweek
 
-    # add holidays to df_all
+    # Add holidays to df_all
     df_all["holiday"] = np.isin(df_all.index.date, df3.index.date)
     missing = msno.bar(df_all)
 
@@ -171,14 +168,36 @@ def analyse_data_all(df_all):
 def data_regression(df_all):
     #This function is for making a linear regression analysis on the power consumption
     #At Alameda campus over 2 years
-
+    df_all = df_all.fillna(0)
 
     #Define plot params
     x_axis = df_all.index
-    y_axis = df_all["Power_kW"]
+    y_axis = df_all['Power_kW']
     color = 'blue'
+    labelx = 'Date'
+    labely = 'Power_kW'
     #Send params to plot function
-    plot_it(x_axis, y_axis, color)
+    #plot_it(x_axis, y_axis, color, labelx,labely)
+
+
+    #Initiate regression
+    x = np.array(df_all['Day_nr']).reshape((-1, 1))
+    y = np.array(df_all['Power_kW'])
+
+    #Create linear regression model & calculate the optimal values of the weights 𝑏₀ and 𝑏₁
+    model = LinearRegression().fit(x, y)
+    reg_score = model.score(x, y)
+    print('coefficient of determination (R^2):', reg_score)
+    print('intercept, b0 [scalar]:', model.intercept_)
+    print('slope, b1 [array]:', model.coef_)
+
+    #Use the model to predict a response
+    y_pred = model.predict(x)
+    print('predicted response:', y_pred, sep='\n')
+    y_pred = model.intercept_ + model.coef_ * x
+
+    plot_it(x,y_pred, 'red', 'date','prediction power_kW')
+
 
 
     return
