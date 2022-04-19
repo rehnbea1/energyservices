@@ -10,8 +10,8 @@
 # - a python file (py) or a python notebook (ipynb) that uses the raw data files  only.
 
 
-# randomforrest
-# regressionmodel
+# randomforrest - check
+# regressionmodel - under work
 
 
 import missingno as msno
@@ -58,7 +58,8 @@ def read_file():
     df3.set_index('Date', inplace=True)
     df4.set_index('yyyy-mm-dd hh:mm:ss', inplace=True)
 
-    # Resample weather data (df4) to have h-frequency. average is taken for everything except the rain:day, which is as maximum
+    # Resample weather data (df4) to have h-frequency.
+    # Average is taken for everything except the rain:day, which is as maximum
     # Not sure if this is correct
 
     df4_resample = df4.resample('H', closed='left', label='right')[
@@ -135,13 +136,16 @@ def analysis(df_all):
 
 
 def analyse_data_all(df_all):
-    # simple offset forcasting
+    # Simple offset forcasting
     forcast_offset = df_all.shift(periods=1)
 
     # Correlation matrix
-    # data_corr = abs(df_all.corr(method='pearson', min_periods=1))
     corr_mtx = df_all.corr()
-    heatmap(corr_mtx, xticklabels=corr_mtx.columns, yticklabels=corr_mtx.columns, annot=True, fmt='.2f', cmap='Blues', )
+    heatmap(corr_mtx,
+            xticklabels=corr_mtx.columns,
+            yticklabels=corr_mtx.columns,
+            annot=True, fmt='.2f',
+            cmap='Blues', )
 
     random_F_generator(df_all)
     data_regression(df_all)
@@ -182,7 +186,10 @@ def random_F_generator(df_all):
     baseline_errors = abs(baseline_preds - test_labels)
     print('Average baseline error: ', round(np.mean(baseline_errors), 2))
 
-    model = RandomForestRegressor(bootstrap=True, min_samples_leaf=1, n_estimators=20, min_samples_split=15,
+    model = RandomForestRegressor(bootstrap=True,
+                                  min_samples_leaf=1,
+                                  n_estimators=20,
+                                  min_samples_split=15,
                                   max_features='sqrt', max_depth=10)
 
     # Train the model on training data
@@ -199,9 +206,6 @@ def random_F_generator(df_all):
     # Calculate and display accuracy
     accuracy = 100 - np.mean(mape)
     print('Accuracy:', round(accuracy, 2), '%.')
-
-    # Extract the small tree
-    # tree_small = model.estimators_[5]
 
     # Try to print the data
     dataframe_again = pd.DataFrame(df_all)
@@ -230,9 +234,10 @@ def random_F_generator(df_all):
 
 
 def main():
-    df_all = read_file()
-    # Plot figure 1
 
+    df_all = read_file()
+
+    # Plot figure 1
     # Plot window setup
 
     # UNCOMMENT EVERYTHING HERE LATER vvvvvv
@@ -310,7 +315,7 @@ def main():
     #    plt.show()
 
     print("main run successfully")
-    print('end')
+    print('END')
 
 
 if __name__ == '__main__':
