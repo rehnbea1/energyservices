@@ -1,11 +1,5 @@
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
 # The objective is to develop a model to forecast electricity consumption in the buildings of IST.
-# To develop the model, the following data files have been collected:
-# - 2017 and 2018 electricity consumption data in 4 buildings (central, civil, south tower and north tower);
-# - list of holidays in Lisbon for 2017,2018, and 2019
-# - weather data for the weather station in South tower for 2017 and 2018
+
 # The deliverable of this project are:
 # - a python file (py) or a python notebook (ipynb) that uses the raw data files  only.
 
@@ -13,8 +7,9 @@
 # randomforrest - check
 # regressionmodel - under work
 
-from data_col import read_power_files, read_holidays,get_merged_data_frame,read_weather_data
+from data_col import read_power_files, read_holiday_file,get_merged_data_frame,read_weather_file
 from plots import get_plot, get_plot_2
+
 
 import missingno as msno
 from seaborn import heatmap
@@ -49,27 +44,11 @@ def plot_it2(x, y, color, labelx, labely):
     plt.show()
     return
 
-
-
-    df_all = df_all.join(df4_resample, how='left')
-
-    df_all['Day_nr'] = df_all.index.dayofweek
-
-    # Add holidays to df_all
-    df_all["holiday"] = np.isin(df_all.index.date, df3.index.date)
     missing = msno.bar(df_all)
 
     #Plot window setup
     plt.rcParams["figure.figsize"] = [15, 3.5]
     plt.rcParams["figure.autolayout"] = True
-
-    #Plot Figure 1
-    plt.xlabel('Figure 1 Date')
-    plt.ylabel('Figure 1 Power in kW')
-    x_axis = df_all.index
-    y_axis = df_all["Power_kW"]
-    plt.plot(x_axis,y_axis)
-    plt.show()
 
     #Print Figure 2
     plt.figure()
@@ -80,8 +59,7 @@ def plot_it2(x, y, color, labelx, labely):
     plt.plot(x2,y2)
     plt.show()
 
-    print("nice")
-    return (df_all)
+    return df_all
 
 
 def analysis(df_all):
@@ -241,18 +219,17 @@ def random_F_generator(df_all):
 
 def main():
 
-
     #Read power data 2017 & 2018
     power = read_power_files()
 
     #Read holiday data
-    holidays = read_holidays()
+    holidays = read_holiday_file()
 
     #Merge power_1718 and holidays
     days_df = get_merged_data_frame(power,holidays)
 
     #Read weather_data
-    weather = read_weather_data()
+    weather = read_weather_file()
 
     #Merge to one DataFrame
     days_df = days_df.join(weather)

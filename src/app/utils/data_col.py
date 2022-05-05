@@ -23,7 +23,7 @@ def read_power_files():
     return power_1718
 
 
-def read_holidays():
+def read_holiday_file():
     #This file is for reading holiday data
 
     file = '/Users/albertrehnberg/Desktop/energyservices/src/app/data/holiday_17_18_19.csv - holiday_17_18_19.csv.csv'
@@ -54,7 +54,7 @@ def get_merged_data_frame(power_1718, holidays):
     return days_df
 
 
-def read_weather_data():
+def read_weather_file():
     #This function is for reading the weather data
 
     file = '/Users/albertrehnberg/Desktop/energyservices/src/app/data/IST_meteo_data_2017_2018_2019.csv - IST_meteo_data_2017_2018_2019.csv.csv'
