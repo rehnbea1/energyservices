@@ -8,14 +8,13 @@
 # regressionmodel - under work
 
 from data_col import read_power_files, read_holiday_file,get_merged_data_frame,read_weather_file
-from plots import get_plot, get_plot_2
+from plots import get_plot, get_plot_2,get_plot_3,get_missingno,get_corr_matrix
+from cluster import initial_cluster
 
-
-import missingno as msno
-from seaborn import heatmap
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from pandas import DataFrame
@@ -26,15 +25,9 @@ from sklearn.preprocessing import PolynomialFeatures
 import pydot
 
 
-def plot_it(x, y, color, labelx, labely):
 
-    fig, ax1 = plt.subplots(figsize=[30, 10])
-    ax1.set_xlabel(labelx)
-    ax1.set_ylabel(labely, color=color)
-    ax1.plot(x, y, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-    plt.show()
-    return
+
+
 
 
 def plot_it2(x, y, color, labelx, labely):
@@ -44,7 +37,6 @@ def plot_it2(x, y, color, labelx, labely):
     plt.show()
     return
 
-    missing = msno.bar(df_all)
 
     #Plot window setup
     plt.rcParams["figure.figsize"] = [15, 3.5]
@@ -64,7 +56,7 @@ def plot_it2(x, y, color, labelx, labely):
 
 def analysis(df_all):
     # Create table with only weekends
-    df_all['wknd_pwr'] = np.where(df_all['Day_nr'] >= 5, df_all['Power_kW'], None)
+    df_all['wknd_pwr'] = np.where(df_all['Day_nr'] >= 5, df_all['power_kw'], None)
     # df_new.index = df_all.index
     df_weekend = pd.DataFrame(data=df_all['wknd_pwr'])
     df_weekend['Day_nr'] = df_all.index.dayofweek
@@ -92,22 +84,10 @@ def analysis(df_all):
 
     return df_all, df_weekend
 
-def analyse_data_all(df_all):
+def simple_offset_forcasting(days_df):
     # Simple offset forcasting
-    forcast_offset = df_all.shift(periods=1)
-
-    # Correlation matrix
-
-    corr_mtx = df_all.corr()
-    heatmap(corr_mtx,
-            xticklabels=corr_mtx.columns,
-            yticklabels=corr_mtx.columns,
-            annot=True, fmt='.2f',
-            cmap='Blues')
-
-
-    random_F_generator(df_all)
-    data_regression(df_all)
+    forcast_offset = days_df.shift(periods=1)
+    return
 
 
 def data_regression(df_all):
@@ -118,8 +98,8 @@ def data_regression(df_all):
     #Initiate regression
     #available vars: temp_C, Power_kW. HR, solarRad_W/m2, rain_mm/h
 
-    x = np.array(df_all['temp_C']).reshape((-1, 1))
-    y = np.array(df_all['Power_kW'])
+    x = np.array(df_all['temp']).reshape((-1, 1))
+    y = np.array(df_all['power_kw'])
     x1 = np.array(df_all.index)
     #Create linear regression model & calculate the optimal values of the weights 𝑏₀ and 𝑏₁
     model = LinearRegression().fit(x, y)
@@ -133,15 +113,36 @@ def data_regression(df_all):
     print('predicted response:', y_pred, sep='\n')
     y_pred = model.intercept_ + model.coef_ * x
 
-    plot_it(x1,y, 'red', 'date','LR power_kW')
-    plot_it(x1,y_pred,'blue','date','LR_prediction_power_kW')
+    x = x1
+    y = y
+    y2 = y_pred
+    color = 'red'
+    labelx = "date"
+    labely = 'LR power_kw'
+
+    fig, ax1 = plt.subplots(figsize=[30, 10])
+    ax1.set_xlabel(labelx)
+    ax1.set_ylabel(labely, color=color)
+    ax1.plot(x, y, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'blue'
+    ax2.set_ylabel('LR_prediction_power_kw', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x, y2, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+
+    plt.show()
+
     return
 
 
 def random_F_generator(df_all):
     # Randomforrestestimate for the next day
 
-    df_all_power_average = df_all['Power_kW'].sum() / len(df_all.index)
+    df_all_power_average = df_all['power_kw'].sum() / len(df_all.index)
     df_all = df_all.fillna(0)
 
     df_all_backup_data_frame = df_all
@@ -149,7 +150,7 @@ def random_F_generator(df_all):
     features = pd.get_dummies(df_all['Day_nr'])
     df_all = df_all.join(features)
     df_all = df_all.drop('Day_nr', axis=1)
-    target = np.array(df_all['Power_kW'])
+    target = np.array(df_all['power_kw'])
 
     df_all_labels_list = list(df_all.columns)
     df_all = np.array(df_all)
@@ -165,7 +166,7 @@ def random_F_generator(df_all):
     print('Testing Labels Shape:', test_labels.shape)
 
     # The baseline predictions are the historical averages
-    baseline_preds = test_features[:, df_all_labels_list.index('Power_kW')]
+    baseline_preds = test_features[:, df_all_labels_list.index('power_kw')]
     # Baseline errors, and display average baseline error
     baseline_errors = abs(baseline_preds - test_labels)
     print('Average baseline error: ', round(np.mean(baseline_errors), 2))
@@ -196,24 +197,24 @@ def random_F_generator(df_all):
     x_axis = dataframe_again.index
     y_axis = predictions
     y2_axis = dataframe_again[0]
-    fig, ax1 = plt.subplots(figsize=[60, 10])
+    fig, ax1 = plt.subplots(figsize=[20, 10])
 
     color = 'y'
     ax1.set_xlabel('RandomForrestgenerator - Date')
-    ax1.set_ylabel('Prediction - Power_kW', color=color)
+    ax1.set_ylabel('Prediction - power_kw', color=color)
     ax1.plot(x_axis, y_axis, color=color)
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
     color = 'g'
-    ax2.set_ylabel('Power_kW', color=color)  # we already handled the x-label with ax1
+    ax2.set_ylabel('power_kw', color=color)  # we already handled the x-label with ax1
     ax2.plot(x_axis, y2_axis, color=color)
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
-    print('NIICE')
+    print('randomforrestgenerator run successfully')
     return
 
 
@@ -234,48 +235,45 @@ def main():
     #Merge to one DataFrame
     days_df = days_df.join(weather)
 
-    #Plot power to temperature
+    #Analyse data with describe
+    data_describe = days_df.describe
+    data_info = days_df.info
+    data_missing = days_df.isna().sum()
+
+    #Missingno analysis
+    get_missingno(days_df)
+
+    #Get correlation matrix
+    get_corr_matrix(days_df)
+    #Figure 1 - power to temperature
     get_plot(days_df)
 
-    #Plot power to temperature relationship
+    #Figure 2 - power to temperature correlation
     get_plot_2(days_df)
 
-    #power to temperature relationship
+    #Figure 3 - weather to index
+    get_plot_3(days_df)
 
-    #Comment: Chart to show correlation of Power and weather
-    fig, ax1 = plt.subplots(figsize=[20, 10])
+    #CLUSTERING
 
-    color = 'pink'
-    ax1.set_xlabel('Main5 - Date')
-    ax1.set_ylabel('Power_kW', color=color)
-    ax1.plot(x_axis, y_axis, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
+    #Cluster
+    initial_cluster(days_df)
 
-    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+    #FORCASTING
 
-    color = 'grey'
-    ax2.set_ylabel('Temp_C', color=color)  # we already handled the x-label with ax1
-    ax2.plot(x_axis, df_all['temp_C'].rolling(90).sum(), color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
+    #Run random forrest generator
+    random_F_generator(days_df)
+    #Run Linear regression
+    data_regression(days_df)
+    #simple_offset_forcasting
+    simple_offset_forcasting(days_df)
 
-    color = 'purple'
-    ax2.set_ylabel('Temp_C', color=color)  # we already handled the x-label with ax1
-    ax2.plot(x_axis, df_all['temp_C'].rolling(90).sum(), color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
 
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.show()
-
-    # UNCOMMENT ALL THE WAY DOWN HERE ^^^^
-    df2 = analyse_data_all(df_all)
-    df_list = analysis(df_all)
+    df_list = analysis(days_df)
     df_all = df_list[0]
     df_new = df_list[1]
 
     print("main run successfully")
-    print('END')
-
-
 if __name__ == '__main__':
     main()
 

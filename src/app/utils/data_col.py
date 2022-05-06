@@ -46,10 +46,11 @@ def get_merged_data_frame(power_1718, holidays):
 
     days_df = power_1718.join(holidays, sort=False)
     days_df["holiday"] = np.isin(days_df.index.date, holidays.index.date)
-    holiday_dummies = pd.get_dummies(days_df['holiday'])
-    days_df = days_df.join(holiday_dummies)
-    days_df = days_df.rename({'False': 'holiday_no','True':'holiday_yes'},axis=1)
-    days_df = days_df.drop('holiday', axis=1)
+    days_df['Day_nr'] = days_df.index.dayofweek
+    #holiday_dummies = pd.get_dummies(days_df['holiday'])
+    #days_df = days_df.join(holiday_dummies)
+    #days_df = days_df.rename({'False': 'holiday_no','True':'holiday_yes'},axis=1)
+    #days_df = days_df.drop('holiday', axis=1)
 
     return days_df
 
